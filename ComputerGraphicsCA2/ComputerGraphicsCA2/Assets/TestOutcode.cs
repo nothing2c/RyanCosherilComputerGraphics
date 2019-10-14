@@ -6,8 +6,8 @@ public class TestOutcode : MonoBehaviour
 {
     void Start()
     {
-        Vector2 point1 = new Vector2(3, 0.4f);
-        Vector2 point2 = new Vector2(0.4f, 0.7f);
+        Vector2 point1 = new Vector2(.5f, 2f);
+        Vector2 point2 = new Vector2(.3f, .1f);
 
         Outcode a = new Outcode(point1);
         Outcode b = new Outcode(point2);
@@ -32,8 +32,17 @@ public class TestOutcode : MonoBehaviour
 
         if(!lineClip(ref point1,ref point2))
         {
-            Debug.Log(point1);
+            Debug.Log(point1.x + "  ,  " + point1.y);
+            Debug.Log(point2.x + "  ,  " + point2.y);
         }
+
+
+        Vector2 pixelPoint1 = new Vector2(12, 15);
+        Vector2 pixelPoint2 = new Vector2(2, 10);
+        List<Vector2> list = breshenham(pixelPoint1, pixelPoint2);
+
+        //foreach(Vector2 v in list)
+        //    Debug.Log(v.x + "  ,  " + v.y);
     }
 
     // Update is called once per frame
@@ -74,8 +83,6 @@ public class TestOutcode : MonoBehaviour
              *second point is in the viewport or not (It wont be as it wasnt trivially rejected, so it continues with the method) */
             return lineClip(ref u, ref v);
         }
-
-        Vector2 v2 = v;
 
         if (v0.up)
         {
@@ -129,5 +136,80 @@ public class TestOutcode : MonoBehaviour
         }
 
         return new Vector2(1, p1.y + slope * (1 - p1.x));
+    }
+
+    public List<Vector2> breshenham(Vector2 start, Vector2 finish)
+    {
+        int dx = (int)(finish.x - start.x);
+
+        if (dx < 0)
+            return breshenham(finish, start);
+
+        int dy = (int)(finish.y - start.y);
+
+        if (dy < 0)// negative slope
+            return negativeY(breshenham(start, negativeY(finish)));
+
+        if (dx > dy)// slope > 1
+            return swapXY(breshenham(swapXY(start), swapXY(finish)));
+
+        int a = 2 * dy;
+        int b = 2 * (dy - dx);
+        int p = 2 * dy - dx;
+
+        List<Vector2> outputList = new List<Vector2>();
+
+        int y = (int)start.y;
+        for(int x = (int)start.x; x <= (int)finish.x; x++)
+        {
+            outputList.Add(new Vector2(x, y));
+
+            if(p > 0)
+            {
+                y++;
+                p += b;
+            }
+
+            else
+            {
+                p += a;
+            }
+        }
+
+        return outputList;
+    }
+
+    public List<Vector2> negativeY (List<Vector2> list)
+    {
+        List<Vector2> outputList = new List<Vector2>();
+
+        foreach(Vector2 v in list)
+        {
+            list.Add(negativeY(v));
+        }
+
+        return outputList;
+    }
+
+    public Vector2 negativeY(Vector2 point)
+    {
+        return new Vector2(point.x, -point.y);
+    }
+
+    public List<Vector2> swapXY(List<Vector2> list)
+    {
+        List<Vector2> outputList = new List<Vector2>();
+
+        foreach (Vector2 v in list)
+        {
+            list.Add(swapXY(v));
+        }
+
+        return outputList;
+    }
+
+    public Vector2 swapXY(Vector2 point)
+    {
+        return new Vector2(point.y, point.x);
     }
 }
