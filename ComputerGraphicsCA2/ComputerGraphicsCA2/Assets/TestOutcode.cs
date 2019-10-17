@@ -6,6 +6,9 @@ public class TestOutcode : MonoBehaviour
 {
     void Start()
     {
+        Texture2D texture = new Texture2D(500, 500);
+        GetComponent<Renderer>().material.mainTexture = texture;
+
         Vector2 point1 = new Vector2(.5f, 2f);
         Vector2 point2 = new Vector2(.3f, .1f);
 
@@ -37,12 +40,20 @@ public class TestOutcode : MonoBehaviour
         }
 
 
-        Vector2 pixelPoint1 = new Vector2(12, 15);
-        Vector2 pixelPoint2 = new Vector2(2, 10);
-        List<Vector2> list = breshenham(pixelPoint1, pixelPoint2);
+        Vector2Int pixelPoint1 = new Vector2Int(500, 0);
+        Vector2Int pixelPoint2 = new Vector2Int(0, 500);
+        List<Vector2Int> list = breshenham(pixelPoint1, pixelPoint2);
 
-        //foreach(Vector2 v in list)
+        //foreach(Vector2Int v in list)
         //    Debug.Log(v.x + "  ,  " + v.y);
+        
+        foreach(Vector2Int v in list)
+        {
+            Color color = Color.blue;
+            texture.SetPixel(v.x, v.y, color);
+        }
+
+        texture.Apply();
     }
 
     // Update is called once per frame
@@ -138,31 +149,31 @@ public class TestOutcode : MonoBehaviour
         return new Vector2(1, p1.y + slope * (1 - p1.x));
     }
 
-    public List<Vector2> breshenham(Vector2 start, Vector2 finish)
+    public List<Vector2Int> breshenham(Vector2Int start, Vector2Int finish)
     {
-        int dx = (int)(finish.x - start.x);
+        int dx = finish.x - start.x;
 
         if (dx < 0)
             return breshenham(finish, start);
 
-        int dy = (int)(finish.y - start.y);
+        int dy = finish.y - start.y;
 
         if (dy < 0)// negative slope
-            return negativeY(breshenham(start, negativeY(finish)));
+            return negativeY(breshenham(negativeY(start), negativeY(finish)));
 
-        if (dx > dy)// slope > 1
+        if (dy > dx)// slope > 1
             return swapXY(breshenham(swapXY(start), swapXY(finish)));
 
         int a = 2 * dy;
         int b = 2 * (dy - dx);
         int p = 2 * dy - dx;
 
-        List<Vector2> outputList = new List<Vector2>();
+        List<Vector2Int> outputList = new List<Vector2Int>();
 
-        int y = (int)start.y;
-        for(int x = (int)start.x; x <= (int)finish.x; x++)
+        int y = start.y;
+        for(int x = start.x; x <= finish.x; x++)
         {
-            outputList.Add(new Vector2(x, y));
+            outputList.Add(new Vector2Int(x, y));
 
             if(p > 0)
             {
@@ -179,37 +190,37 @@ public class TestOutcode : MonoBehaviour
         return outputList;
     }
 
-    public List<Vector2> negativeY (List<Vector2> list)
+    public List<Vector2Int> negativeY (List<Vector2Int> list)
     {
-        List<Vector2> outputList = new List<Vector2>();
+        List<Vector2Int> outputList = new List<Vector2Int>();
 
-        foreach(Vector2 v in list)
+        foreach(Vector2Int v in list)
         {
-            list.Add(negativeY(v));
+            outputList.Add(negativeY(v));
         }
 
         return outputList;
     }
 
-    public Vector2 negativeY(Vector2 point)
+    public Vector2Int negativeY(Vector2Int point)
     {
-        return new Vector2(point.x, -point.y);
+        return new Vector2Int(point.x, -point.y);
     }
 
-    public List<Vector2> swapXY(List<Vector2> list)
+    public List<Vector2Int> swapXY(List<Vector2Int> list)
     {
-        List<Vector2> outputList = new List<Vector2>();
+        List<Vector2Int> outputList = new List<Vector2Int>();
 
-        foreach (Vector2 v in list)
+        foreach (Vector2Int v in list)
         {
-            list.Add(swapXY(v));
+            outputList.Add(swapXY(v));
         }
 
         return outputList;
     }
 
-    public Vector2 swapXY(Vector2 point)
+    public Vector2Int swapXY(Vector2Int point)
     {
-        return new Vector2(point.y, point.x);
+        return new Vector2Int(point.y, point.x);
     }
 }
