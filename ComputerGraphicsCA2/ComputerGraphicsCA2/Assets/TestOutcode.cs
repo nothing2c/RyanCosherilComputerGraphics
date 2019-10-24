@@ -5,14 +5,37 @@ using UnityEngine;
 
 public class TestOutcode : MonoBehaviour
 {
-
     Texture2D texture;
+
+    Vector3[] cube;
+
+    float rotationAngle;
+    Vector3 startingAxis;
+    Quaternion rotation;
+    Vector3 scale;
+    Vector3 translate;
+
+    Matrix4x4 viewingMatrix;
+    Matrix4x4 projectionMatrix;
+
+    Matrix4x4 rotationMatrix;
+    Matrix4x4 scaleMatrix;
+    Matrix4x4 translateMatrix;
+
+    Matrix4x4 transformMatrix;
+    Matrix4x4 BIGMATRIX;
+
+    Vector3[] finalImage;
+    Vector2[] finalPostDivisionImage;
+
+    Vector2 start;
+    Vector2 finish;
     void Start()
     {
-        texture = new Texture2D(500, 500);
+        texture = new Texture2D(Screen.width, Screen.height);
         GetComponent<Renderer>().material.mainTexture = texture;
 
-        Vector3[] cube = new Vector3[8];
+        cube = new Vector3[8];
         cube[0] = new Vector3(1, 1, 1);
         cube[1] = new Vector3(-1, 1, 1);
         cube[2] = new Vector3(-1, -1, 1);
@@ -22,147 +45,140 @@ public class TestOutcode : MonoBehaviour
         cube[6] = new Vector3(-1, -1, -1);
         cube[7] = new Vector3(1, -1, -1);
 
-        Vector3 cameraPosition = new Vector3(0, 0, 10);
-        Vector3 cameraLookAt = new Vector3(0, 0,0 );
-        Vector3 cameraUp = new Vector3(0,1,0);
+        // viewing matrix
+        Vector3 cameraPosition = new Vector3(0, 0, 30);
+        Vector3 cameraLookAt = new Vector3(0, 0, 0);
+        Vector3 cameraUp = new Vector3(0, 1 ,0);
 
         Vector3 lookRotationDir = cameraLookAt - cameraPosition;
 
         Quaternion camRotation = Quaternion.LookRotation(lookRotationDir.normalized, cameraUp.normalized);
 
-        Matrix4x4 viewingMatrix = Matrix4x4.TRS(-cameraPosition, camRotation, Vector3.one);
+        viewingMatrix = Matrix4x4.TRS(-cameraPosition, camRotation, Vector3.one);
 
-        Matrix4x4 projectionMatrix = Matrix4x4.Perspective(45, 1.6f, 1, 1000);
+        // projection matrix
+        projectionMatrix = Matrix4x4.Perspective(45, Screen.width / Screen.height, 1, 1000);
 
-        Matrix4x4 BIGMATRIX = projectionMatrix * viewingMatrix;
+        startingAxis = new Vector3(14, 3, 3);
+        startingAxis.Normalize();
 
-        Vector3[] finalImage = MatrixTransform(cube, BIGMATRIX);
+        rotationAngle = -22;
 
-        Vector2[] finalPostDivisionIMage = dividebyz(finalImage);
+        scale = new Vector3(14, 3, 3);
 
-        // 0- 1
+        translate = new Vector3(5, -3, 4);
 
-        Vector2 start = finalPostDivisionIMage[0];
-        Vector2 finish = finalPostDivisionIMage[1];
+        drawCube();
+    }
 
-        if (lineClip(ref start, ref finish))
-            plot(breshenham(convertToScreenSpace(start), convertToScreenSpace(finish)));
+    // Update is called once per frame
+    void Update()
+    {
+        translate += (Vector3.one) * Time.deltaTime;
+        drawCube();
+    }
 
-        // 1-2
-
-        start = finalPostDivisionIMage[1];
-        finish = finalPostDivisionIMage[2];
-
-        if (lineClip(ref start, ref finish))
-            plot(breshenham(convertToScreenSpace(start), convertToScreenSpace(finish)));
-
-        // 2-3
-
-        start = finalPostDivisionIMage[2];
-        finish = finalPostDivisionIMage[3];
-
-        if (lineClip(ref start, ref finish))
-            plot(breshenham(convertToScreenSpace(start), convertToScreenSpace(finish)));
-
-        // 3-0
-
-        start = finalPostDivisionIMage[3];
-        finish = finalPostDivisionIMage[0];
-
-        if (lineClip(ref start, ref finish))
-            plot(breshenham(convertToScreenSpace(start), convertToScreenSpace(finish)));
-
-        start = finalPostDivisionIMage[1];
-        finish = finalPostDivisionIMage[5];
-
-        if (lineClip(ref start, ref finish))
-            plot(breshenham(convertToScreenSpace(start), convertToScreenSpace(finish)));
-
-        start = finalPostDivisionIMage[0];
-        finish = finalPostDivisionIMage[4];
-
-        if (lineClip(ref start, ref finish))
-            plot(breshenham(convertToScreenSpace(start), convertToScreenSpace(finish)));
-
-        start = finalPostDivisionIMage[2];
-        finish = finalPostDivisionIMage[6];
-
-        if (lineClip(ref start, ref finish))
-            plot(breshenham(convertToScreenSpace(start), convertToScreenSpace(finish)));
-
-        start = finalPostDivisionIMage[3];
-        finish = finalPostDivisionIMage[7];
-
-        if (lineClip(ref start, ref finish))
-            plot(breshenham(convertToScreenSpace(start), convertToScreenSpace(finish)));
-
-        start = finalPostDivisionIMage[5];
-        finish = finalPostDivisionIMage[4];
-
-        if (lineClip(ref start, ref finish))
-            plot(breshenham(convertToScreenSpace(start), convertToScreenSpace(finish)));
-
-        start = finalPostDivisionIMage[4];
-        finish = finalPostDivisionIMage[7];
-
-        if (lineClip(ref start, ref finish))
-            plot(breshenham(convertToScreenSpace(start), convertToScreenSpace(finish)));
-
-        start = finalPostDivisionIMage[7];
-        finish = finalPostDivisionIMage[6];
-
-        if (lineClip(ref start, ref finish))
-            plot(breshenham(convertToScreenSpace(start), convertToScreenSpace(finish)));
-
-        start = finalPostDivisionIMage[6];
-        finish = finalPostDivisionIMage[5];
-
-        if (lineClip(ref start, ref finish))
-            plot(breshenham(convertToScreenSpace(start), convertToScreenSpace(finish)));
-
-        // 1 - 5
-
-        Vector2 point1 = new Vector2(.5f, 2f);
-        Vector2 point2 = new Vector2(.3f, .1f);
-
-        Outcode a = new Outcode(point1);
-        Outcode b = new Outcode(point2);
-
-        // all false
-        Outcode inViewPort = new Outcode();
-
-        if ((a == inViewPort) && (b == inViewPort))
-        {
-            Debug.Log("Trivially Accept");
-        }
-
-        if(a * b != inViewPort)
-        {
-            Debug.Log("Trivially Rejected");
-        }
-
-        if((a + b) == inViewPort)
-        {
-            Debug.Log("Trivially Accept");
-        }
-
-        if(!lineClip(ref point1,ref point2))
-        {
-            Debug.Log(point1.x + "  ,  " + point1.y);
-            Debug.Log(point2.x + "  ,  " + point2.y);
-        }
-
-
-        Vector2Int pixelPoint1 = new Vector2Int(500, 0);
-        Vector2Int pixelPoint2 = new Vector2Int(0, 500);
-        List<Vector2Int> list = breshenham(pixelPoint1, pixelPoint2);
-
-        //foreach(Vector2Int v in list)
-        //    Debug.Log(v.x + "  ,  " + v.y);
-        
+    private void drawCube()
+    {
+        // rotation matrix
         
 
-      
+       
+
+        rotation = Quaternion.AngleAxis(rotationAngle, startingAxis);
+        rotationMatrix = Matrix4x4.TRS(Vector3.zero, rotation, Vector3.one);
+
+        // scale matrix
+        
+
+        scaleMatrix = Matrix4x4.TRS(Vector3.zero, Quaternion.identity, scale);
+
+        // translation matrix
+       
+
+        translateMatrix = Matrix4x4.TRS(translate, Quaternion.identity, Vector3.one);
+
+        // transform matrix
+        transformMatrix = translateMatrix * scaleMatrix * rotationMatrix;
+
+        // super matrix
+        BIGMATRIX = projectionMatrix * viewingMatrix * transformMatrix;
+
+        finalImage = MatrixTransform(cube, BIGMATRIX);
+
+        finalPostDivisionImage = dividebyz(finalImage);
+
+        start = finalPostDivisionImage[0];
+        finish = finalPostDivisionImage[1];
+
+        if (lineClip(ref start, ref finish))
+            plot(breshenham(convertToScreenSpace(start), convertToScreenSpace(finish)));
+
+        start = finalPostDivisionImage[1];
+        finish = finalPostDivisionImage[2];
+
+        if (lineClip(ref start, ref finish))
+            plot(breshenham(convertToScreenSpace(start), convertToScreenSpace(finish)));
+
+        start = finalPostDivisionImage[2];
+        finish = finalPostDivisionImage[3];
+
+        if (lineClip(ref start, ref finish))
+            plot(breshenham(convertToScreenSpace(start), convertToScreenSpace(finish)));
+
+        start = finalPostDivisionImage[3];
+        finish = finalPostDivisionImage[0];
+
+        if (lineClip(ref start, ref finish))
+            plot(breshenham(convertToScreenSpace(start), convertToScreenSpace(finish)));
+
+        start = finalPostDivisionImage[1];
+        finish = finalPostDivisionImage[5];
+
+        if (lineClip(ref start, ref finish))
+            plot(breshenham(convertToScreenSpace(start), convertToScreenSpace(finish)));
+
+        start = finalPostDivisionImage[0];
+        finish = finalPostDivisionImage[4];
+
+        if (lineClip(ref start, ref finish))
+            plot(breshenham(convertToScreenSpace(start), convertToScreenSpace(finish)));
+
+        start = finalPostDivisionImage[2];
+        finish = finalPostDivisionImage[6];
+
+        if (lineClip(ref start, ref finish))
+            plot(breshenham(convertToScreenSpace(start), convertToScreenSpace(finish)));
+
+        start = finalPostDivisionImage[3];
+        finish = finalPostDivisionImage[7];
+
+        if (lineClip(ref start, ref finish))
+            plot(breshenham(convertToScreenSpace(start), convertToScreenSpace(finish)));
+
+        start = finalPostDivisionImage[5];
+        finish = finalPostDivisionImage[4];
+
+        if (lineClip(ref start, ref finish))
+            plot(breshenham(convertToScreenSpace(start), convertToScreenSpace(finish)));
+
+        start = finalPostDivisionImage[4];
+        finish = finalPostDivisionImage[7];
+
+        if (lineClip(ref start, ref finish))
+            plot(breshenham(convertToScreenSpace(start), convertToScreenSpace(finish)));
+
+        start = finalPostDivisionImage[7];
+        finish = finalPostDivisionImage[6];
+
+        if (lineClip(ref start, ref finish))
+            plot(breshenham(convertToScreenSpace(start), convertToScreenSpace(finish)));
+
+        start = finalPostDivisionImage[6];
+        finish = finalPostDivisionImage[5];
+
+        if (lineClip(ref start, ref finish))
+            plot(breshenham(convertToScreenSpace(start), convertToScreenSpace(finish)));
     }
 
     private void plot(List<Vector2Int> list)
@@ -193,12 +209,6 @@ public class TestOutcode : MonoBehaviour
 
         return output_list.ToArray();
 
-    }
-
-    // Update is called once per frame
-    void Update()
-    {
-        
     }
 
     /// <summary>
