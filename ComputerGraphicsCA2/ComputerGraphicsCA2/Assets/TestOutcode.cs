@@ -27,11 +27,16 @@ public class TestOutcode : MonoBehaviour
 
     Vector3[] finalImage;
     Vector2[] finalPostDivisionImage;
+    List<Vector2Int> oldDrawnPixels;
+    List<Color> oldDrawnPixelsColors;
 
     Vector2 start;
     Vector2 finish;
     void Start()
     {
+        oldDrawnPixels = new List<Vector2Int>();
+        oldDrawnPixelsColors = new List<Color>();
+
         texture = new Texture2D(Screen.width, Screen.height);
         GetComponent<Renderer>().material.mainTexture = texture;
 
@@ -59,12 +64,12 @@ public class TestOutcode : MonoBehaviour
         // projection matrix
         projectionMatrix = Matrix4x4.Perspective(45, Screen.width / Screen.height, 1, 1000);
 
-        startingAxis = new Vector3(14, 3, 3);
+        startingAxis = new Vector3(12, 4, 7);
         startingAxis.Normalize();
 
-        rotationAngle = -22;
+        rotationAngle = 90;
 
-        scale = new Vector3(14, 3, 3);
+        scale = new Vector3(3, 3, 3);
 
         translate = new Vector3(5, -3, 4);
 
@@ -74,16 +79,34 @@ public class TestOutcode : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        translate += (Vector3.one) * Time.deltaTime;
+        rotationAngle += 1;
+        startingAxis = Vector3.up;
+        translate = new Vector3(10, 0, 0);
+
         drawCube();
+    }
+
+    void undrawCube()
+    {
+        foreach (Vector2Int v in oldDrawnPixels)
+        {
+            Color color = oldDrawnPixelsColors[oldDrawnPixels.IndexOf(v)];
+            texture.SetPixel(v.x, v.y, color);
+        }
+
+        oldDrawnPixels.Clear();
+        texture.Apply();
     }
 
     private void drawCube()
     {
-        // rotation matrix
-        
+        //undrawCube();
 
-       
+        Destroy(texture);
+
+        texture = new Texture2D(Screen.width, Screen.height);
+        GetComponent<Renderer>().material.mainTexture = texture;
+        // rotation matrix
 
         rotation = Quaternion.AngleAxis(rotationAngle, startingAxis);
         rotationMatrix = Matrix4x4.TRS(Vector3.zero, rotation, Vector3.one);
@@ -99,7 +122,7 @@ public class TestOutcode : MonoBehaviour
         translateMatrix = Matrix4x4.TRS(translate, Quaternion.identity, Vector3.one);
 
         // transform matrix
-        transformMatrix = translateMatrix * scaleMatrix * rotationMatrix;
+        transformMatrix = rotationMatrix * scaleMatrix * translateMatrix;
 
         // super matrix
         BIGMATRIX = projectionMatrix * viewingMatrix * transformMatrix;
@@ -187,6 +210,7 @@ public class TestOutcode : MonoBehaviour
         {
             Color color = Color.blue;
             texture.SetPixel(v.x, v.y, color);
+           
         }
 
         texture.Apply();
