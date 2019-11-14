@@ -8,6 +8,7 @@ public class TestOutcode : MonoBehaviour
     Texture2D texture;
 
     Vector3[] cube;
+    List<Vector3[]> triangles;
 
     float rotationAngle;
     Vector3 startingAxis;
@@ -37,7 +38,7 @@ public class TestOutcode : MonoBehaviour
         oldDrawnPixels = new List<Vector2Int>();
         oldDrawnPixelsColors = new List<Color>();
 
-        texture = new Texture2D(Screen.width, Screen.height);
+        texture = new Texture2D(500, 500);
         GetComponent<Renderer>().material.mainTexture = texture;
 
         cube = new Vector3[8];
@@ -50,8 +51,11 @@ public class TestOutcode : MonoBehaviour
         cube[6] = new Vector3(-1, -1, -1);
         cube[7] = new Vector3(1, -1, -1);
 
+        triangles = new List<Vector3[]>();
+        
+
         // viewing matrix
-        Vector3 cameraPosition = new Vector3(0, 0, 30);
+        Vector3 cameraPosition = new Vector3(0, 0, 60);
         Vector3 cameraLookAt = new Vector3(0, 0, 0);
         Vector3 cameraUp = new Vector3(0, 1 ,0);
 
@@ -86,39 +90,34 @@ public class TestOutcode : MonoBehaviour
         drawCube();
     }
 
-    void undrawCube()
+    void boundaryFill4(int x, int y, Color fill_color, Color boundary_color)
     {
-        foreach (Vector2Int v in oldDrawnPixels)
+        if (texture.GetPixel(x, y) != boundary_color && texture.GetPixel(x, y) != fill_color)
         {
-            Color color = oldDrawnPixelsColors[oldDrawnPixels.IndexOf(v)];
-            texture.SetPixel(v.x, v.y, color);
-        }
 
-        oldDrawnPixels.Clear();
-        texture.Apply();
+            texture.SetPixel(x, y, fill_color);
+            boundaryFill4(x + 1, y, fill_color, boundary_color);
+            boundaryFill4(x, y + 1, fill_color, boundary_color);
+            boundaryFill4(x - 1, y, fill_color, boundary_color);
+            boundaryFill4(x, y - 1, fill_color, boundary_color);
+        }
     }
 
     private void drawCube()
     {
-        //undrawCube();
-
         Destroy(texture);
 
-        texture = new Texture2D(Screen.width, Screen.height);
+        texture = new Texture2D(500, 500);
         GetComponent<Renderer>().material.mainTexture = texture;
-        // rotation matrix
 
+        // rotation matrix
         rotation = Quaternion.AngleAxis(rotationAngle, startingAxis);
         rotationMatrix = Matrix4x4.TRS(Vector3.zero, rotation, Vector3.one);
 
         // scale matrix
-        
-
         scaleMatrix = Matrix4x4.TRS(Vector3.zero, Quaternion.identity, scale);
 
         // translation matrix
-       
-
         translateMatrix = Matrix4x4.TRS(translate, Quaternion.identity, Vector3.one);
 
         // transform matrix
@@ -202,6 +201,8 @@ public class TestOutcode : MonoBehaviour
 
         if (lineClip(ref start, ref finish))
             plot(breshenham(convertToScreenSpace(start), convertToScreenSpace(finish)));
+
+        //boundaryFill4(convertToScreenSpace(finalPostDivisionImage[0]).x - 10, convertToScreenSpace(finalPostDivisionImage[0]).y - 10, Color.black, Color.blue);
     }
 
     private void plot(List<Vector2Int> list)
