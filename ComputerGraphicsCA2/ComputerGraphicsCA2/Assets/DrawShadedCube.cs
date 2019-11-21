@@ -3,11 +3,13 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class TestOutcode : MonoBehaviour
+public class DrawShadedCube : MonoBehaviour
 {
     Texture2D texture;
 
     Vector3[] cube;
+    List<Vector2Int[]> triangles;
+    Vector2Int floodFillPoint;
 
     float rotationAngle;
     Vector3 startingAxis;
@@ -44,11 +46,13 @@ public class TestOutcode : MonoBehaviour
         cube[5] = new Vector3(-1, 1, -1);
         cube[6] = new Vector3(-1, -1, -1);
         cube[7] = new Vector3(1, -1, -1);
-        
+
+        triangles = new List<Vector2Int[]>();
+
         // viewing matrix
         Vector3 cameraPosition = new Vector3(0, 0, 60);
         Vector3 cameraLookAt = new Vector3(0, 0, 0);
-        Vector3 cameraUp = new Vector3(0, 1 ,0);
+        Vector3 cameraUp = new Vector3(0, 1, 0);
 
         Vector3 lookRotationDir = cameraLookAt - cameraPosition;
 
@@ -79,6 +83,25 @@ public class TestOutcode : MonoBehaviour
         translate = new Vector3(10, 0, 0);
 
         drawCube();
+    }
+
+    void floodFill(int x, int y, Color fill, Color border)
+    {
+        if ((x < 0) || (x >= texture.width))
+            return;
+
+        if ((y < 0) || (y >= texture.height))
+            return;
+
+        if(texture.GetPixel(x, y) != border)
+        {
+            texture.SetPixel(x, y, fill);
+
+            floodFill(x + 1, y, fill, border);
+            floodFill(x, y + 1, fill, border);
+            floodFill(x - 1, y, fill, border);
+            floodFill(x, y - 1, fill, border);
+        }
     }
 
     private void drawCube()
@@ -114,11 +137,18 @@ public class TestOutcode : MonoBehaviour
         if (lineClip(ref start, ref finish))
             plot(breshenham(convertToScreenSpace(start), convertToScreenSpace(finish)));
 
+        Vector2Int[] triangle1 = new Vector2Int[3];
+        triangle1[0] = convertToScreenSpace(start);
+        triangle1[1] = convertToScreenSpace(finish);
+
         start = finalPostDivisionImage[1];
         finish = finalPostDivisionImage[2];
 
         if (lineClip(ref start, ref finish))
             plot(breshenham(convertToScreenSpace(start), convertToScreenSpace(finish)));
+
+        triangle1[2] = convertToScreenSpace(finish);
+
 
         start = finalPostDivisionImage[2];
         finish = finalPostDivisionImage[3];
@@ -179,6 +209,23 @@ public class TestOutcode : MonoBehaviour
 
         if (lineClip(ref start, ref finish))
             plot(breshenham(convertToScreenSpace(start), convertToScreenSpace(finish)));
+
+        floodFillPoint = getMidPoint(triangle1[0], triangle1[2]);
+        floodFillPoint = getMidPoint(floodFillPoint, triangle1[1]);
+
+        floodFill(floodFillPoint.x, floodFillPoint.y, Color.red, Color.blue);
+
+        texture.Apply();
+
+        Debug.Log(triangle1[0] + ", " + triangle1[1] + ", " + triangle1[2] + ", " + floodFillPoint);       
+    }
+
+    Vector2Int getMidPoint(Vector2Int a, Vector2Int b)
+    {
+        int x = (a.x + b.x) / 2;
+        int y = (a.y + b.y) / 2;
+
+        return new Vector2Int(x, y);
     }
 
     private void plot(List<Vector2Int> list)
@@ -187,7 +234,7 @@ public class TestOutcode : MonoBehaviour
         {
             Color color = Color.blue;
             texture.SetPixel(v.x, v.y, color);
-           
+
         }
 
         texture.Apply();
@@ -209,6 +256,7 @@ public class TestOutcode : MonoBehaviour
             output_list.Add(new Vector2(v.x / v.z, v.y / v.z));
 
         return output_list.ToArray();
+
     }
 
     /// <summary>
@@ -280,7 +328,7 @@ public class TestOutcode : MonoBehaviour
     {
         float slope = (p2.y - p1.y) / (p2.x - p1.x);
 
-        if(v2 == 0)
+        if (v2 == 0)
         {
             return new Vector2(p1.x + (1 / slope) * (1 - p1.y), 1);
         }
@@ -320,11 +368,11 @@ public class TestOutcode : MonoBehaviour
         List<Vector2Int> outputList = new List<Vector2Int>();
 
         int y = start.y;
-        for(int x = start.x; x <= finish.x; x++)
+        for (int x = start.x; x <= finish.x; x++)
         {
             outputList.Add(new Vector2Int(x, y));
 
-            if(p > 0)
+            if (p > 0)
             {
                 y++;
                 p += b;
@@ -339,11 +387,11 @@ public class TestOutcode : MonoBehaviour
         return outputList;
     }
 
-    public List<Vector2Int> negativeY (List<Vector2Int> list)
+    public List<Vector2Int> negativeY(List<Vector2Int> list)
     {
         List<Vector2Int> outputList = new List<Vector2Int>();
 
-        foreach(Vector2Int v in list)
+        foreach (Vector2Int v in list)
         {
             outputList.Add(negativeY(v));
         }
