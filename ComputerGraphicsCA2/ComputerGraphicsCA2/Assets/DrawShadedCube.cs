@@ -8,7 +8,7 @@ public class DrawShadedCube : MonoBehaviour
     Texture2D texture;
 
     Vector3[] cube;
-    List<Vector2Int[]> triangles;
+    List<Vector2Int[]> faces;
     Vector2Int floodFillPoint;
 
     float rotationAngle;
@@ -47,10 +47,10 @@ public class DrawShadedCube : MonoBehaviour
         cube[6] = new Vector3(-1, -1, -1);
         cube[7] = new Vector3(1, -1, -1);
 
-        triangles = new List<Vector2Int[]>();
+        faces = new List<Vector2Int[]>();
 
         // viewing matrix
-        Vector3 cameraPosition = new Vector3(0, 0, 60);
+        Vector3 cameraPosition = new Vector3(0, 0, 30);
         Vector3 cameraLookAt = new Vector3(0, 0, 0);
         Vector3 cameraUp = new Vector3(0, 1, 0);
 
@@ -63,14 +63,14 @@ public class DrawShadedCube : MonoBehaviour
         // projection matrix
         projectionMatrix = Matrix4x4.Perspective(45, Screen.width / Screen.height, 1, 1000);
 
-        startingAxis = new Vector3(12, 4, 7);
+        startingAxis = Vector3.up;
         startingAxis.Normalize();
 
         rotationAngle = 90;
 
-        scale = new Vector3(3, 3, 3);
+        scale = new Vector3(1, 1, 1);
 
-        translate = new Vector3(5, -3, 4);
+        translate = new Vector3(0, 0, 0);
 
         drawCube();
     }
@@ -93,7 +93,7 @@ public class DrawShadedCube : MonoBehaviour
         if ((y < 0) || (y >= texture.height))
             return;
 
-        if(texture.GetPixel(x, y) != border)
+        if(texture.GetPixel(x, y) != border && texture.GetPixel(x, y) != fill)
         {
             texture.SetPixel(x, y, fill);
 
@@ -131,15 +131,26 @@ public class DrawShadedCube : MonoBehaviour
 
         finalPostDivisionImage = dividebyz(finalImage);
 
+        Vector2Int[] face1 = new Vector2Int[4];
+        Vector2Int[] face2 = new Vector2Int[4];
+        Vector2Int[] face3 = new Vector2Int[4];
+        Vector2Int[] face4 = new Vector2Int[4];
+        Vector2Int[] face5 = new Vector2Int[4];
+        Vector2Int[] face6 = new Vector2Int[4];
+
         start = finalPostDivisionImage[0];
         finish = finalPostDivisionImage[1];
 
         if (lineClip(ref start, ref finish))
             plot(breshenham(convertToScreenSpace(start), convertToScreenSpace(finish)));
 
-        Vector2Int[] triangle1 = new Vector2Int[3];
-        triangle1[0] = convertToScreenSpace(start);
-        triangle1[1] = convertToScreenSpace(finish);
+        face1[0] = convertToScreenSpace(start);
+        face4[0] = convertToScreenSpace(start);
+        face5[0] = convertToScreenSpace(start);
+
+        face1[1] = convertToScreenSpace(finish);
+        face4[1] = convertToScreenSpace(finish);
+        face6[0] = convertToScreenSpace(finish);
 
         start = finalPostDivisionImage[1];
         finish = finalPostDivisionImage[2];
@@ -147,8 +158,9 @@ public class DrawShadedCube : MonoBehaviour
         if (lineClip(ref start, ref finish))
             plot(breshenham(convertToScreenSpace(start), convertToScreenSpace(finish)));
 
-        triangle1[2] = convertToScreenSpace(finish);
-
+        face1[2] = convertToScreenSpace(finish);
+        face2[0] = convertToScreenSpace(finish);
+        face6[1] = convertToScreenSpace(finish);
 
         start = finalPostDivisionImage[2];
         finish = finalPostDivisionImage[3];
@@ -156,14 +168,24 @@ public class DrawShadedCube : MonoBehaviour
         if (lineClip(ref start, ref finish))
             plot(breshenham(convertToScreenSpace(start), convertToScreenSpace(finish)));
 
+        face1[3] = convertToScreenSpace(finish);
+        face2[1] = convertToScreenSpace(finish);
+        face5[1] = convertToScreenSpace(finish);
+
         start = finalPostDivisionImage[3];
         finish = finalPostDivisionImage[0];
 
+        // no new points
+        
         if (lineClip(ref start, ref finish))
             plot(breshenham(convertToScreenSpace(start), convertToScreenSpace(finish)));
 
         start = finalPostDivisionImage[1];
         finish = finalPostDivisionImage[5];
+
+        face4[2] = convertToScreenSpace(finish);
+        face3[0] = convertToScreenSpace(finish);
+        face6[2] = convertToScreenSpace(finish);
 
         if (lineClip(ref start, ref finish))
             plot(breshenham(convertToScreenSpace(start), convertToScreenSpace(finish)));
@@ -174,17 +196,29 @@ public class DrawShadedCube : MonoBehaviour
         if (lineClip(ref start, ref finish))
             plot(breshenham(convertToScreenSpace(start), convertToScreenSpace(finish)));
 
+        face4[3] = convertToScreenSpace(finish);
+        face3[1] = convertToScreenSpace(finish);
+        face5[2] = convertToScreenSpace(finish);
+
         start = finalPostDivisionImage[2];
         finish = finalPostDivisionImage[6];
 
         if (lineClip(ref start, ref finish))
             plot(breshenham(convertToScreenSpace(start), convertToScreenSpace(finish)));
 
+        face2[2] = convertToScreenSpace(finish);
+        face3[2] = convertToScreenSpace(finish);
+        face6[3] = convertToScreenSpace(finish);
+
         start = finalPostDivisionImage[3];
         finish = finalPostDivisionImage[7];
 
         if (lineClip(ref start, ref finish))
             plot(breshenham(convertToScreenSpace(start), convertToScreenSpace(finish)));
+
+        face2[3] = convertToScreenSpace(finish);
+        face3[3] = convertToScreenSpace(finish);
+        face5[3] = convertToScreenSpace(finish);
 
         start = finalPostDivisionImage[5];
         finish = finalPostDivisionImage[4];
@@ -210,20 +244,33 @@ public class DrawShadedCube : MonoBehaviour
         if (lineClip(ref start, ref finish))
             plot(breshenham(convertToScreenSpace(start), convertToScreenSpace(finish)));
 
-        floodFillPoint = getMidPoint(triangle1[0], triangle1[2]);
-        floodFillPoint = getMidPoint(floodFillPoint, triangle1[1]);
+        Debug.Log(face1[0] + ", " + face1[1] + ", " + face1[2] + ", " + floodFillPoint);
 
+        floodFillPoint = getFloodFillPoint(face1);
+        floodFill(floodFillPoint.x, floodFillPoint.y, Color.red, Color.blue);
+
+        floodFillPoint = getFloodFillPoint(face2);
+        floodFill(floodFillPoint.x, floodFillPoint.y, Color.red, Color.blue);
+
+        floodFillPoint = getFloodFillPoint(face3);
+        floodFill(floodFillPoint.x, floodFillPoint.y, Color.red, Color.blue);
+
+        floodFillPoint = getFloodFillPoint(face4);
+        floodFill(floodFillPoint.x, floodFillPoint.y, Color.red, Color.blue);
+
+        floodFillPoint = getFloodFillPoint(face5);
+        floodFill(floodFillPoint.x, floodFillPoint.y, Color.red, Color.blue);
+
+        floodFillPoint = getFloodFillPoint(face6);
         floodFill(floodFillPoint.x, floodFillPoint.y, Color.red, Color.blue);
 
         texture.Apply();
-
-        Debug.Log(triangle1[0] + ", " + triangle1[1] + ", " + triangle1[2] + ", " + floodFillPoint);       
     }
 
-    Vector2Int getMidPoint(Vector2Int a, Vector2Int b)
+    Vector2Int getFloodFillPoint(Vector2Int[] points)
     {
-        int x = (a.x + b.x) / 2;
-        int y = (a.y + b.y) / 2;
+        int x = (points[0].x + points[1].x + points[2].x + points[3].x) / 4;
+        int y = (points[0].y + points[1].y + points[2].y + points[3].y) / 4;
 
         return new Vector2Int(x, y);
     }
@@ -234,7 +281,6 @@ public class DrawShadedCube : MonoBehaviour
         {
             Color color = Color.blue;
             texture.SetPixel(v.x, v.y, color);
-
         }
 
         texture.Apply();

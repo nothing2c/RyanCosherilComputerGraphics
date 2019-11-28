@@ -64,9 +64,9 @@ public class TestOutcode : MonoBehaviour
 
         rotationAngle = 90;
 
-        scale = new Vector3(3, 3, 3);
+        scale = new Vector3(1, 3, 4);
 
-        translate = new Vector3(5, -3, 4);
+        translate = new Vector3(0, 0, 0);
 
         drawCube();
     }
