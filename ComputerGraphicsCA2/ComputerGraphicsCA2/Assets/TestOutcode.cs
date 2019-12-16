@@ -32,7 +32,7 @@ public class TestOutcode : MonoBehaviour
     Vector2 finish;
     void Start()
     {
-        texture = new Texture2D(500, 500);
+        texture = new Texture2D(Screen.width, Screen.height);
         GetComponent<Renderer>().material.mainTexture = texture;
 
         cube = new Vector3[8];
@@ -46,7 +46,7 @@ public class TestOutcode : MonoBehaviour
         cube[7] = new Vector3(1, -1, -1);
         
         // viewing matrix
-        Vector3 cameraPosition = new Vector3(0, 0, 60);
+        Vector3 cameraPosition = new Vector3(0, 0, 20);
         Vector3 cameraLookAt = new Vector3(0, 0, 0);
         Vector3 cameraUp = new Vector3(0, 1 ,0);
 
@@ -64,7 +64,7 @@ public class TestOutcode : MonoBehaviour
 
         rotationAngle = 90;
 
-        scale = new Vector3(1, 3, 4);
+        scale = new Vector3(1, 2, 2);
 
         translate = new Vector3(0, 0, 0);
 
@@ -85,7 +85,7 @@ public class TestOutcode : MonoBehaviour
     {
         Destroy(texture);
 
-        texture = new Texture2D(500, 500);
+        texture = new Texture2D(Screen.width, Screen.height);
         GetComponent<Renderer>().material.mainTexture = texture;
 
         // rotation matrix

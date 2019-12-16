@@ -6,16 +6,17 @@ using UnityEngine;
 public class DrawShadedCube : MonoBehaviour
 {
     Texture2D texture;
+    Light light;
 
     Vector3[] cube;
-    List<Vector2Int[]> faces;
-    Vector2Int floodFillPoint;
 
-    float rotationAngle;
-    Vector3 startingAxis;
+    [SerializeField]Vector3 scale;
+    [SerializeField]Vector3 translate;
+    [SerializeField]float rotationAngle;
+    [SerializeField]Vector3 startingAxis;
     Quaternion rotation;
-    Vector3 scale;
-    Vector3 translate;
+
+    Color defaultColour;
 
     Matrix4x4 viewingMatrix;
     Matrix4x4 projectionMatrix;
@@ -30,12 +31,14 @@ public class DrawShadedCube : MonoBehaviour
     Vector3[] finalImage;
     Vector2[] finalPostDivisionImage;
 
-    Vector2 start;
-    Vector2 finish;
     void Start()
     {
-        texture = new Texture2D(500, 500);
+        texture = new Texture2D(Screen.width, Screen.height, TextureFormat.RGBA32, false);
         GetComponent<Renderer>().material.mainTexture = texture;
+
+        light = FindObjectOfType<Light>();
+
+        defaultColour = new Color(texture.GetPixel(1, 1).r, texture.GetPixel(1, 1).g, texture.GetPixel(1, 1).b, texture.GetPixel(1, 1).a);
 
         cube = new Vector3[8];
         cube[0] = new Vector3(1, 1, 1);
@@ -47,10 +50,8 @@ public class DrawShadedCube : MonoBehaviour
         cube[6] = new Vector3(-1, -1, -1);
         cube[7] = new Vector3(1, -1, -1);
 
-        faces = new List<Vector2Int[]>();
-
         // viewing matrix
-        Vector3 cameraPosition = new Vector3(0, 0, 30);
+        Vector3 cameraPosition = new Vector3(0, 0, 20);
         Vector3 cameraLookAt = new Vector3(0, 0, 0);
         Vector3 cameraUp = new Vector3(0, 1, 0);
 
@@ -66,7 +67,7 @@ public class DrawShadedCube : MonoBehaviour
         startingAxis = Vector3.up;
         startingAxis.Normalize();
 
-        rotationAngle = 90;
+        rotationAngle = 0;
 
         scale = new Vector3(1, 1, 1);
 
@@ -75,40 +76,18 @@ public class DrawShadedCube : MonoBehaviour
         drawCube();
     }
 
-    // Update is called once per frame
     void Update()
     {
-        rotationAngle += 1;
-        startingAxis = Vector3.up;
-        translate = new Vector3(10, 0, 0);
+        // modify transform values in editor
 
         drawCube();
-    }
-
-    void floodFill(int x, int y, Color fill, Color border)
-    {
-        if ((x < 0) || (x >= texture.width))
-            return;
-
-        if ((y < 0) || (y >= texture.height))
-            return;
-
-        if(texture.GetPixel(x, y) != border && texture.GetPixel(x, y) != fill)
-        {
-            texture.SetPixel(x, y, fill);
-
-            floodFill(x + 1, y, fill, border);
-            floodFill(x, y + 1, fill, border);
-            floodFill(x - 1, y, fill, border);
-            floodFill(x, y - 1, fill, border);
-        }
     }
 
     private void drawCube()
     {
         Destroy(texture);
 
-        texture = new Texture2D(500, 500);
+        texture = new Texture2D(Screen.width, Screen.height, TextureFormat.RGBA32, false);
         GetComponent<Renderer>().material.mainTexture = texture;
 
         // rotation matrix
@@ -131,148 +110,161 @@ public class DrawShadedCube : MonoBehaviour
 
         finalPostDivisionImage = dividebyz(finalImage);
 
-        Vector2Int[] face1 = new Vector2Int[4];
-        Vector2Int[] face2 = new Vector2Int[4];
-        Vector2Int[] face3 = new Vector2Int[4];
-        Vector2Int[] face4 = new Vector2Int[4];
-        Vector2Int[] face5 = new Vector2Int[4];
-        Vector2Int[] face6 = new Vector2Int[4];
+        Vector2[] frontFace = new Vector2[4];
+        Vector2[] rightFace = new Vector2[4];
+        Vector2[] topFace = new Vector2[4];
+        Vector2[] backFace = new Vector2[4];
+        Vector2[] leftFace = new Vector2[4];
+        Vector2[] bottomFace = new Vector2[4];
 
-        start = finalPostDivisionImage[0];
-        finish = finalPostDivisionImage[1];
+        // front
+        frontFace[0] = finalPostDivisionImage[0];
+        frontFace[1] = finalPostDivisionImage[1];
+        frontFace[2] = finalPostDivisionImage[2];
+        frontFace[3] = finalPostDivisionImage[3];
 
-        if (lineClip(ref start, ref finish))
-            plot(breshenham(convertToScreenSpace(start), convertToScreenSpace(finish)));
+        // right
+        rightFace[0] = finalPostDivisionImage[4];
+        rightFace[1] = finalPostDivisionImage[0];
+        rightFace[2] = finalPostDivisionImage[3];
+        rightFace[3] = finalPostDivisionImage[7];
 
-        face1[0] = convertToScreenSpace(start);
-        face4[0] = convertToScreenSpace(start);
-        face5[0] = convertToScreenSpace(start);
+        // top
+        topFace[0] = finalPostDivisionImage[4];
+        topFace[1] = finalPostDivisionImage[5];
+        topFace[2] = finalPostDivisionImage[1];
+        topFace[3] = finalPostDivisionImage[0];
 
-        face1[1] = convertToScreenSpace(finish);
-        face4[1] = convertToScreenSpace(finish);
-        face6[0] = convertToScreenSpace(finish);
+        // back
+        backFace[0] = finalPostDivisionImage[5];
+        backFace[1] = finalPostDivisionImage[4];
+        backFace[2] = finalPostDivisionImage[7];
+        backFace[3] = finalPostDivisionImage[6];
 
-        start = finalPostDivisionImage[1];
-        finish = finalPostDivisionImage[2];
+        // left
+        leftFace[0] = finalPostDivisionImage[1];
+        leftFace[1] = finalPostDivisionImage[5];
+        leftFace[2] = finalPostDivisionImage[6];
+        leftFace[3] = finalPostDivisionImage[2];
 
-        if (lineClip(ref start, ref finish))
-            plot(breshenham(convertToScreenSpace(start), convertToScreenSpace(finish)));
+        // bottom
+        bottomFace[0] = finalPostDivisionImage[6];
+        bottomFace[1] = finalPostDivisionImage[7];
+        bottomFace[2] = finalPostDivisionImage[3];
+        bottomFace[3] = finalPostDivisionImage[2];
 
-        face1[2] = convertToScreenSpace(finish);
-        face2[0] = convertToScreenSpace(finish);
-        face6[1] = convertToScreenSpace(finish);
-
-        start = finalPostDivisionImage[2];
-        finish = finalPostDivisionImage[3];
-
-        if (lineClip(ref start, ref finish))
-            plot(breshenham(convertToScreenSpace(start), convertToScreenSpace(finish)));
-
-        face1[3] = convertToScreenSpace(finish);
-        face2[1] = convertToScreenSpace(finish);
-        face5[1] = convertToScreenSpace(finish);
-
-        start = finalPostDivisionImage[3];
-        finish = finalPostDivisionImage[0];
-
-        // no new points
-        
-        if (lineClip(ref start, ref finish))
-            plot(breshenham(convertToScreenSpace(start), convertToScreenSpace(finish)));
-
-        start = finalPostDivisionImage[1];
-        finish = finalPostDivisionImage[5];
-
-        face4[2] = convertToScreenSpace(finish);
-        face3[0] = convertToScreenSpace(finish);
-        face6[2] = convertToScreenSpace(finish);
-
-        if (lineClip(ref start, ref finish))
-            plot(breshenham(convertToScreenSpace(start), convertToScreenSpace(finish)));
-
-        start = finalPostDivisionImage[0];
-        finish = finalPostDivisionImage[4];
-
-        if (lineClip(ref start, ref finish))
-            plot(breshenham(convertToScreenSpace(start), convertToScreenSpace(finish)));
-
-        face4[3] = convertToScreenSpace(finish);
-        face3[1] = convertToScreenSpace(finish);
-        face5[2] = convertToScreenSpace(finish);
-
-        start = finalPostDivisionImage[2];
-        finish = finalPostDivisionImage[6];
-
-        if (lineClip(ref start, ref finish))
-            plot(breshenham(convertToScreenSpace(start), convertToScreenSpace(finish)));
-
-        face2[2] = convertToScreenSpace(finish);
-        face3[2] = convertToScreenSpace(finish);
-        face6[3] = convertToScreenSpace(finish);
-
-        start = finalPostDivisionImage[3];
-        finish = finalPostDivisionImage[7];
-
-        if (lineClip(ref start, ref finish))
-            plot(breshenham(convertToScreenSpace(start), convertToScreenSpace(finish)));
-
-        face2[3] = convertToScreenSpace(finish);
-        face3[3] = convertToScreenSpace(finish);
-        face5[3] = convertToScreenSpace(finish);
-
-        start = finalPostDivisionImage[5];
-        finish = finalPostDivisionImage[4];
-
-        if (lineClip(ref start, ref finish))
-            plot(breshenham(convertToScreenSpace(start), convertToScreenSpace(finish)));
-
-        start = finalPostDivisionImage[4];
-        finish = finalPostDivisionImage[7];
-
-        if (lineClip(ref start, ref finish))
-            plot(breshenham(convertToScreenSpace(start), convertToScreenSpace(finish)));
-
-        start = finalPostDivisionImage[7];
-        finish = finalPostDivisionImage[6];
-
-        if (lineClip(ref start, ref finish))
-            plot(breshenham(convertToScreenSpace(start), convertToScreenSpace(finish)));
-
-        start = finalPostDivisionImage[6];
-        finish = finalPostDivisionImage[5];
-
-        if (lineClip(ref start, ref finish))
-            plot(breshenham(convertToScreenSpace(start), convertToScreenSpace(finish)));
-
-        Debug.Log(face1[0] + ", " + face1[1] + ", " + face1[2] + ", " + floodFillPoint);
-
-        floodFillPoint = getFloodFillPoint(face1);
-        floodFill(floodFillPoint.x, floodFillPoint.y, Color.red, Color.blue);
-
-        floodFillPoint = getFloodFillPoint(face2);
-        floodFill(floodFillPoint.x, floodFillPoint.y, Color.red, Color.blue);
-
-        floodFillPoint = getFloodFillPoint(face3);
-        floodFill(floodFillPoint.x, floodFillPoint.y, Color.red, Color.blue);
-
-        floodFillPoint = getFloodFillPoint(face4);
-        floodFill(floodFillPoint.x, floodFillPoint.y, Color.red, Color.blue);
-
-        floodFillPoint = getFloodFillPoint(face5);
-        floodFill(floodFillPoint.x, floodFillPoint.y, Color.red, Color.blue);
-
-        floodFillPoint = getFloodFillPoint(face6);
-        floodFill(floodFillPoint.x, floodFillPoint.y, Color.red, Color.blue);
+        drawFace(frontFace);
+        drawFace(rightFace);
+        drawFace(topFace);
+        drawFace(backFace);
+        drawFace(leftFace);
+        drawFace(bottomFace);
 
         texture.Apply();
     }
 
-    Vector2Int getFloodFillPoint(Vector2Int[] points)
+    void drawFace(Vector2[] points)
     {
-        int x = (points[0].x + points[1].x + points[2].x + points[3].x) / 4;
-        int y = (points[0].y + points[1].y + points[2].y + points[3].y) / 4;
+        Vector2 i = points[0];
+        Vector2 j = points[1];
+        Vector2 k = points[2];
+        Vector2 l = points[3];
 
-        return new Vector2Int(x, y);
+        if (isFrontFace(points))
+        {
+            drawLine(i, j);
+            drawLine(j, k);
+            drawLine(k, l);
+            drawLine(l, i);
+
+            Vector2 floodFillPoint = getFloodFillPoint(points);
+            Vector2 midPoint = convertToScreenSpace(floodFillPoint);
+
+            Vector3 normal = getNormal(points);
+
+            floodFill((int)midPoint.x, (int)midPoint.y, Color.red, defaultColour, normal);
+        }
+    }
+
+    public void floodFill(int x, int y, Color fill, Color oldColour, Vector3 normal)
+    {
+        Stack<Vector2> points = new Stack<Vector2>();
+        points.Push(new Vector2(x, y));
+
+        while (points.Count > 0)
+        {
+            Vector2 p = points.Pop();
+
+            if (isInView(p))
+            {
+                if (texture.GetPixel((int)p.x, (int)p.y) == oldColour)
+                {
+                    Vector3 lightDir = getLightDir(p);
+                    float dotProduct = Vector3.Dot(lightDir, normal);
+                    Color colour = new Color(dotProduct * fill.r * light.intensity, dotProduct * fill.g * light.intensity, dotProduct * fill.b * light.intensity, 1);
+
+                    texture.SetPixel((int)p.x, (int)p.y, colour);
+                    points.Push(new Vector2(p.x + 1, p.y));
+                    points.Push(new Vector2(p.x - 1, p.y));
+                    points.Push(new Vector2(p.x, p.y + 1));
+                    points.Push(new Vector2(p.x, p.y - 1));
+                }
+            }
+        }
+    }
+
+    bool isInView(Vector2 point)
+    {
+        if ((point.x < 0) || (point.x >= texture.width))
+            return false;
+
+        else if ((point.y < 0) || (point.y >= texture.height))
+            return false;
+
+        else
+            return true;
+    }
+
+    Vector3 getNormal(Vector2[] face)
+    {
+        Vector2 i = face[0];
+        Vector2 j = face[1];
+        Vector2 k = face[2];
+
+        Vector2 a = j - i;
+        Vector2 b = k - i;
+
+        return Vector3.Cross(a, b);
+    }
+
+    public Vector3 getLightDir(Vector3 point)
+    {
+        return Vector3.Normalize((point - light.transform.position));
+    }
+
+    void drawLine(Vector2 start, Vector2 finish)
+    {
+        if (lineClip(ref start, ref finish))
+            plot(breshenham(convertToScreenSpace(start), convertToScreenSpace(finish)));
+    }
+    
+    bool isFrontFace(Vector2[] points)
+    {
+        Vector2 i = points[0];
+        Vector2 j = points[1];
+        Vector2 k = points[2];
+
+        float z = (j.x - i.x) * (k.y - j.y) - (j.y - i.y) * (k.x - j.x);
+
+        return z >= 0;
+    }
+
+    Vector2 getFloodFillPoint(Vector2[] points)
+    {
+        float x = (points[0].x + points[1].x + points[2].x + points[3].x) / 4;
+        float y = (points[0].y + points[1].y + points[2].y + points[3].y) / 4;
+
+        return new Vector2(x, y);
     }
 
     private void plot(List<Vector2Int> list)
